@@ -17,10 +17,20 @@ class MiniTest::Spec
   after :each do
     DatabaseCleaner.clean
   end
+
+  def post_json(url, data)
+    post(url, data.to_json, { "CONTENT_TYPE" => "application/json" })
+    JSON.parse(last_response.body, :symbolize_names => true)
+  end
+
+  def get_json(url)
+    get path 
+    JSON.parse(last_response.body)
+  end
 end
 
 
 
 def app
-  Sinatra::Application
+  Api::V1::Scheduler
 end

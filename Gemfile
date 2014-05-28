@@ -1,10 +1,11 @@
 # A sample Gemfile
 source "https://rubygems.org"
 
-gem 'sinatra'
+gem 'sinatra', :require => 'sinatra/base'
 gem 'rack'
 gem 'sequel'
 gem 'sqlite3'
+gem 'warden'
 
 group :test do 
   gem 'minitest'

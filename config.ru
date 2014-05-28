@@ -2,4 +2,4 @@ require_relative 'app'
 
 
 
-run Sinatra::Application
+run Api::V1::Scheduler
