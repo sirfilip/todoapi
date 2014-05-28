@@ -54,12 +54,12 @@ module Api
     class Scheduler < Sinatra::Base
       helpers do 
         def json_input
-          content_type :json
           request.body.rewind
           JSON.parse(request.body.read, :symbolize_names => true)
         end
 
         def respond_with(data, _meta = {})
+          content_type :json
           data[:_meta] = _meta
           data.to_json
         end
