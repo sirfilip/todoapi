@@ -13,14 +13,14 @@ DB.create_table :todos do
   Integer :user_id
   Integer :priority, :default => 0
   Boolean :done, :default => false
-end
+end unless DB.table_exists?(:todos)
 
 DB.create_table :users do 
   Integer :id, :primary_key => true
   String :email, :unique => true
   String :password
   String :token
-end
+end unless DB.table_exists?(:users)
 
 Sequel::Model.raise_on_save_failure = false
 
@@ -59,6 +59,7 @@ module Api
         end
 
         def respond_with(data, _meta = {})
+          status 200
           content_type :json
           data[:_meta] = _meta
           data.to_json
@@ -77,7 +78,16 @@ module Api
         end
       end
 
-      post '/api/v1/session' do 
+      post '/api/v1/session' do
+        data = json_input
+        user = User[:email => data[:email]]
+        if user and user.password == Hasher.encrypt(data[:password])
+          user.token = Hasher.encrypt("#{user.id}:#{user.email + Time.now.to_s}")
+          user.save
+          respond_with({:status => 201, :message => 'Login successful', :token => user.token})
+        else
+          respond_with({:status => 412, :message => 'Wrong email/password combination'})
+        end 
       end
 
       delete '/api/v1/session' do 

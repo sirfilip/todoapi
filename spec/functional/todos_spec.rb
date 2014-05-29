@@ -1,4 +1,4 @@
-require_relative 'spec_helper'
+require File.expand_path('../../spec_helper', __FILE__)
 
 
 describe 'Api::V1::Scheduler' do
@@ -8,7 +8,7 @@ describe 'Api::V1::Scheduler' do
     it 'gets the correct content' do
       todo = {
         'description' => 'Create an api',
-        'user_id' => 0,
+        'user_id' => 1,
         'priority' => 0,
         'done' => false
       }
