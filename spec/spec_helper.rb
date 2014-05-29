@@ -24,7 +24,7 @@ class MiniTest::Spec
   end
 
   def get_json(url)
-    get path 
+    get url 
     JSON.parse(last_response.body)
   end
 end

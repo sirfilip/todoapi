@@ -52,6 +52,47 @@ end
 module Api
   module V1
     class Scheduler < Sinatra::Base
+    
+      use Warden::Manager do |manager|
+        manager.default_strategies :token, :password
+        manager.failure_app = lambda {|env| [200, {'Content-type' => 'application/json'}, [env['warden'].message || '{"status": 401, "message":"Login required"}']]}
+      end
+      
+      Warden::Strategies.add(:token) do 
+        def valid?
+          params["token"]
+        end
+        
+        def authenticate!
+          u = User[:token => params["token"]]
+          u.nil? ? fail!('{"status": 401, "message":"Login required"}') : success!(u) 
+        end
+      end
+      
+      Warden::Strategies.add(:password) do 
+        def data
+          request.body.rewind
+          JSON.parse(request.body.read, :symbolize_names => true)
+        end
+        
+        def valid?
+          data[:email] && data[:password]
+        end
+        
+        def authenticate!
+          user = User[:email => data[:email]]
+          if user and user.password == Hasher.encrypt(data[:password])
+            user.token = Hasher.encrypt("#{user.id}:#{user.email + Time.now.to_s}")
+            user.save
+            success!(user) 
+          else
+            fail!('{"status": 412, "message":"Wrong email and password combination"}')
+          end
+        end
+      end
+    
+    
+    
       helpers do 
         def json_input
           request.body.rewind
@@ -64,6 +105,18 @@ module Api
           data[:_meta] = _meta
           data.to_json
         end
+        
+        def warden
+          env['warden']
+        end
+        
+        def authenticate!
+          warden.authenticate! :token
+        end
+        
+        def current_user
+          warden && warden.user 
+        end
       end
 
 
@@ -72,29 +125,27 @@ module Api
         password = Hasher.encrypt(data[:password]) if data[:password]
         user = User.new(:email => data[:email], :password => password)
         if user.save
-          respond_with({:status => 201, :message => 'User created successfully'})
+          respond_with({:status => 201, :message => 'User created successfully'}, {:login_url => '/api/v1/session'})
         else
           respond_with({:status => 412, :message => 'Invalid Record', :errors => user.errors})
         end
       end
 
       post '/api/v1/session' do
-        data = json_input
-        user = User[:email => data[:email]]
-        if user and user.password == Hasher.encrypt(data[:password])
-          user.token = Hasher.encrypt("#{user.id}:#{user.email + Time.now.to_s}")
-          user.save
-          respond_with({:status => 201, :message => 'Login successful', :token => user.token})
-        else
-          respond_with({:status => 412, :message => 'Wrong email/password combination'})
-        end 
+        warden.authenticate! :password
+        respond_with({:status => 201, :message => 'Login successful', :token => warden.user.token}) 
       end
 
       delete '/api/v1/session' do 
+        authenticate!
+        current_user.token = nil
+        current_user.save
+        respond_with({:status => 200, :message => 'Logout successfull'})
       end
 
 
-      get '/api/v1/todos' do 
+      get '/api/v1/todos' do
+        authenticate! 
         DB[:todos].all.to_json
       end
     end
