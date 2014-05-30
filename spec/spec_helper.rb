@@ -18,15 +18,26 @@ class MiniTest::Spec
     DatabaseCleaner.clean
   end
 
-  def post_json(url, data)
-    post(url, data.to_json, { "CONTENT_TYPE" => "application/json" })
-    JSON.parse(last_response.body, :symbolize_names => true)
-  end
-
   def get_json(url)
     get url 
     JSON.parse(last_response.body, :symbolize_names => true)
   end
+
+  def post_json(url, data={})
+    post(url, data.to_json, { "CONTENT_TYPE" => "application/json" })
+    JSON.parse(last_response.body, :symbolize_names => true)
+  end
+  
+  def put_json(url, data={})
+    put(url, data.to_json, { "CONTENT_TYPE" => "application/json" })
+    JSON.parse(last_response.body, :symbolize_names => true)
+  end
+  
+  def delete_json(url, data={})
+    delete(url, data.to_json, { "CONTENT_TYPE" => "application/json" })
+    JSON.parse(last_response.body, :symbolize_names => true)
+  end
+
 end
 
 

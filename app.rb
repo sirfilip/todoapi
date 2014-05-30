@@ -27,16 +27,8 @@ Sequel::Model.raise_on_save_failure = false
 Sequel::Model.plugin :validation_helpers
 Sequel::Model.plugin :json_serializer
 
-#class Sequel::Dataset
-#  def to_json
-#    naked.all.to_json
-#  end
-#end
-
 class User < Sequel::Model
-#  plugin :validation_helpers
   set_allowed_columns(:email, :password)
-
 
   def validate
     super
@@ -49,9 +41,10 @@ end
 class Todo < Sequel::Model
   set_allowed_columns(:description, :priority, :due_date, :done)
   
-#  def to_json(options = {})
-#    values.to_json
-#  end
+  def validate 
+    super 
+    validates_presence [:description, :user_id], :message => 'cant be blank'
+  end
 end
 
 require 'digest/sha1'
@@ -135,6 +128,7 @@ module Api
         def current_user
           warden && warden.user 
         end
+
       end
 
 
@@ -166,6 +160,41 @@ module Api
         authenticate! 
         respond_with({:status => 200, :todos => Todo.where(:user_id => current_user.id).all})
       end
+      
+      post '/api/v1/todos' do 
+        authenticate!
+        data = json_input
+        todo = Todo.new(:description => data[:description], :priority => data[:priority], :due_date => data[:due_date])
+        todo.user_id = current_user.id
+        if todo.save 
+          respond_with({:status => 201, :message => 'Todo created successfully', :todo => todo}, {:todo_url => "/api/v1/todos/#{todo.id}"})
+        else
+          respond_with({:status => 412, :message => 'Invalid Record', :errors => todo.errors})     
+        end
+      end
+
+      get '/api/v1/todos/:id' do
+        authenticate!
+        todo = Todo[:id => params[:id], :user_id => current_user.id] or halt 404
+        respond_with({:status => 200, :todo => todo})
+      end
+
+      put '/api/v1/todos/:id' do 
+        authenticate!
+        todo = Todo[:id => params[:id], :user_id => current_user.id] or halt 404
+        data = json_input
+        if todo.update_fields(data, [:description, :priority, :due_date])
+          respond_with({:status => 200, :message => 'Todo updated successfully', :todo => todo}, {:todo_url => "/api/v1/todos/#{todo.id}"})
+        else
+          respond_with({:status => 412, :message => 'Invalid Record', :errors => todo.errors})     
+        end
+      end
+      
+      not_found do 
+        status 200
+        respond_with({:status => 404, :message => 'Not Found'})
+      end
+      
     end
   end
 end
