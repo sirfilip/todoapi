@@ -129,4 +129,27 @@ describe 'Api::V1::Scheduler' do
     end
   end
 
+  describe 'DELETE /api/v1/todos/:id' do
+    it 'deletes a todo owned by a user' do 
+      todo = Todo.new(:description => 'desc')
+      todo.user_id = @user.id
+      todo.save
+      id = todo.id
+      result = delete_json "/api/v1/todos/#{id}?token=#{@user.token}"
+      result[:status].must_equal 200
+      result[:message].must_equal "Todo deleted successfully"
+      Todo[:id => id].must_be_nil
+    end
+
+    it 'does not delete a record if not owned by user' do
+      todo = Todo.new(:description => 'desc')
+      todo.user_id = 0
+      todo.save
+      id = todo.id
+      result = delete_json "/api/v1/todos/#{id}?token=#{@user.token}"
+      result[:status].must_equal 404
+      result[:message].must_equal "Not Found"
+      Todo[:id => id].wont_be_nil
+    end
+  end
 end

@@ -189,6 +189,13 @@ module Api
           respond_with({:status => 412, :message => 'Invalid Record', :errors => todo.errors})     
         end
       end
+
+      delete '/api/v1/todos/:id' do 
+        authenticate!
+        todo = Todo[:id => params[:id], :user_id => current_user.id] or halt 404
+        todo.destroy
+        respond_with({:status => 200, :message => 'Todo deleted successfully'})
+      end
       
       not_found do 
         status 200
