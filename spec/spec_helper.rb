@@ -25,7 +25,7 @@ class MiniTest::Spec
 
   def get_json(url)
     get url 
-    JSON.parse(last_response.body)
+    JSON.parse(last_response.body, :symbolize_names => true)
   end
 end
 

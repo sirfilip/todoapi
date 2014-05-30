@@ -13,6 +13,7 @@ DB.create_table :todos do
   Integer :user_id
   Integer :priority, :default => 0
   Boolean :done, :default => false
+  DateTime :due_date
 end unless DB.table_exists?(:todos)
 
 DB.create_table :users do 
@@ -23,9 +24,17 @@ DB.create_table :users do
 end unless DB.table_exists?(:users)
 
 Sequel::Model.raise_on_save_failure = false
+Sequel::Model.plugin :validation_helpers
+Sequel::Model.plugin :json_serializer
+
+#class Sequel::Dataset
+#  def to_json
+#    naked.all.to_json
+#  end
+#end
 
 class User < Sequel::Model
-  plugin :validation_helpers
+#  plugin :validation_helpers
   set_allowed_columns(:email, :password)
 
 
@@ -35,6 +44,14 @@ class User < Sequel::Model
     validates_unique :email, :message => 'already taken'
     validates_format /.+@.+\.(com|net|org)/, :email, :message => 'not a valid email'
   end
+end
+
+class Todo < Sequel::Model
+  set_allowed_columns(:description, :priority, :due_date, :done)
+  
+#  def to_json(options = {})
+#    values.to_json
+#  end
 end
 
 require 'digest/sha1'
@@ -102,6 +119,7 @@ module Api
         def respond_with(data, _meta = {})
           status 200
           content_type :json
+          data[:message] ||= ''
           data[:_meta] = _meta
           data.to_json
         end
@@ -146,7 +164,7 @@ module Api
 
       get '/api/v1/todos' do
         authenticate! 
-        DB[:todos].all.to_json
+        respond_with({:status => 200, :todos => Todo.where(:user_id => current_user.id).all})
       end
     end
   end

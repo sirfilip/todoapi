@@ -12,15 +12,23 @@ describe 'Api::V1::Scheduler' do
     end
   
     it 'gets the correct content' do
-      todo = {
-        'description' => 'Create an api',
-        'user_id' => @user.id,
-        'priority' => 0,
-        'done' => false
-      }
-      todo['id'] = DB[:todos].insert(todo)
+      users_todo = Todo.new(
+        :description => 'Create an api',
+        :priority => 0,
+        :done => false
+      )
+      users_todo.user_id = @user.id
+      users_todo.save
+      others_todo = Todo.new(
+        :description => 'Create an api',
+        :priority => 0,
+        :done => false
+      )
+      others_todo.user_id = 0
+      others_todo.save
       result = get_json "/api/v1/todos?token=#{@user.token}"
-      result.must_equal [todo]
+      result[:todos].must_include users_todo.values
+      result[:todos].wont_include others_todo.values
     end
 
   end
