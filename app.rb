@@ -5,7 +5,11 @@ Bundler.require
 
 require 'json'
 
-DB = Sequel.sqlite
+if ENV['RACK_ENV'] == 'test' 
+  DB = Sequel.sqlite
+else
+  DB = Sequel.connect('sqlite://db/dev.db')
+end
 
 DB.create_table :todos do 
   Integer :id, :primary_key => true
@@ -62,6 +66,10 @@ end
 module Api
   module V1
     class Scheduler < Sinatra::Base
+
+      set :method_override, true
+      set :show_exceptions, false
+      set :raise_errors, false
     
       use Warden::Manager do |manager|
         manager.default_strategies :token, :password
@@ -131,6 +139,22 @@ module Api
 
       end
 
+      get '/' do 
+        respond_with({
+          :status => 200,
+          :message => 'Available routes',
+          :routes => {
+            'POST /api/v1/session' => 'Login in system',
+            'DELETE /api/v1/session' => 'Logout from system',
+            'GET /api/v1/todos' => 'Get logged in user todos. Auth required',
+            'POST /api/v1/todos' => 'Create new todo. Auth required',
+            'PUT /api/v1/todos/:id' => 'Update todo. Auth required',
+            'GET /api/v1/todos/:id' => 'Show single todo. Auth required',
+            'DELETE /api/v1/todos/:id' => 'Delete todo. Auth required'
+          }
+        })
+      end
+
 
       post '/api/v1/users' do 
         data = json_input
@@ -158,7 +182,16 @@ module Api
 
       get '/api/v1/todos' do
         authenticate! 
-        respond_with({:status => 200, :todos => Todo.where(:user_id => current_user.id).all})
+        limit = params[:limit] || 50
+        offset = params[:offset] || 0
+        order = params[:order] || 'id'
+        order = order.to_sym if ['id', 'priority', 'due_date'].include? order
+        respond_with({:status => 200, :todos => Todo.where(:user_id => current_user.id).limit(limit).offset(offset).order(order).all}, {
+          :total => Todo.where(:user_id => current_user.id).count,
+          :offset => offset,
+          :limit => limit,
+          :order => order.to_s
+        })
       end
       
       post '/api/v1/todos' do 
@@ -200,6 +233,10 @@ module Api
       not_found do 
         status 200
         respond_with({:status => 404, :message => 'Not Found'})
+      end
+
+      error do 
+        respond_with({:status => 500, :message => 'Server Error'})
       end
       
     end

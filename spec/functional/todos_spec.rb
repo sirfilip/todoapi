@@ -30,6 +30,34 @@ describe 'Api::V1::Scheduler' do
       result[:todos].must_include users_todo.values
       result[:todos].wont_include others_todo.values
     end
+
+    it 'provides meta with additional info' do 
+      users_todo = Todo.new(
+        :description => 'Create an api',
+        :priority => 0,
+        :done => false
+      )
+      users_todo.user_id = @user.id
+      users_todo.save
+      others_todo = Todo.new(
+        :description => 'Create an api',
+        :priority => 0,
+        :done => false
+      )
+      others_todo.user_id = 0
+      others_todo.save
+      result = get_json "/api/v1/todos?token=#{@user.token}"
+      result[:_meta][:total].must_equal 1
+      result[:_meta][:offset].must_equal 0
+      result[:_meta][:limit].must_equal 50
+      result[:_meta][:order].must_equal 'id'
+    end
+
+    it 'provides proper 500 page' do 
+      result = get_json "/api/v1/todos?token=#{@user.token}&limit=asfasdfasfasfasdf"
+      result[:status].must_equal 500
+      result[:message].must_equal 'Server Error'
+    end
   end
   
   describe 'POST /api/v1/todos' do
