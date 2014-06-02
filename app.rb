@@ -37,8 +37,8 @@ class User < Sequel::Model
   def validate
     super
     validates_presence [:email, :password], :message => 'cant be blank'
-    validates_unique :email, :message => 'already taken'
-    validates_format /.+@.+\.(com|net|org)/, :email, :message => 'not a valid email'
+    validates_unique :email, :message => 'is already taken'
+    validates_format /.+@.+\.(com|net|org)/, :email, :message => 'is not a valid email'
   end
 end
 
