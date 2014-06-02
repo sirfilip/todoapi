@@ -70,11 +70,12 @@ module Api
       set :method_override, true
       set :show_exceptions, false
       set :raise_errors, false
+      # set :protection, except: :http_origin
       set :protection, false
     
       use Warden::Manager do |manager|
         manager.default_strategies :token, :password
-        manager.failure_app = lambda {|env| [200, {'Content-type' => 'application/json'}, [env['warden'].message || '{"status": 401, "message":"Login required"}']]}
+        manager.failure_app = lambda {|env| [200, {'Content-type' => 'application/json', 'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, OPTIONS', 'Access-Control-Allow-Origin' => '*', 'Access-Control-Allow-Headers' => 'Content-Type'}, [env['warden'].message || '{"status": 401, "message":"Login required"}']]}
       end
       
       Warden::Strategies.add(:token) do 
@@ -141,10 +142,10 @@ module Api
       before do
         headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         headers['Access-Control-Allow-Origin'] = '*'
-        headers['Access-Control-Allow-Headers'] = 'accept, authorization, origin'
+        headers['Access-Control-Allow-Headers'] = 'Content-Type'
       end
 
-      get '/' do 
+      get '/api/v1' do 
         respond_with({
           :status => 200,
           :message => 'Available routes',
