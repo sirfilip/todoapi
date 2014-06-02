@@ -70,6 +70,7 @@ module Api
       set :method_override, true
       set :show_exceptions, false
       set :raise_errors, false
+      set :protection, false
     
       use Warden::Manager do |manager|
         manager.default_strategies :token, :password
@@ -109,8 +110,6 @@ module Api
         end
       end
     
-    
-    
       helpers do 
         def json_input
           request.body.rewind
@@ -137,6 +136,12 @@ module Api
           warden && warden.user 
         end
 
+      end
+
+      before do
+        headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        headers['Access-Control-Allow-Origin'] = '*'
+        headers['Access-Control-Allow-Headers'] = 'accept, authorization, origin'
       end
 
       get '/' do 
