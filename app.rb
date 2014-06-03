@@ -102,7 +102,7 @@ module Api
         def authenticate!
           user = User[:email => data[:email]]
           if user and user.password == Hasher.encrypt(data[:password])
-            user.token = Hasher.encrypt("#{user.id}:#{user.email + Time.now.to_s}")
+            user.token = "#{user.id}:" + Hasher.encrypt("#{user.email + Time.now.to_s}")
             user.save
             success!(user) 
           else
