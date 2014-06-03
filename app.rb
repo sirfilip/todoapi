@@ -15,9 +15,9 @@ DB.create_table :todos do
   Integer :id, :primary_key => true
   String :description
   Integer :user_id
-  Integer :priority, :default => 0
+  Integer :priority, :default => 1
   Boolean :done, :default => false
-  DateTime :due_date
+  Date :due_date
 end unless DB.table_exists?(:todos)
 
 DB.create_table :users do 
@@ -222,7 +222,7 @@ module Api
         authenticate!
         todo = Todo[:id => params[:id], :user_id => current_user.id] or halt 404
         data = json_input
-        if todo.update_fields(data, [:description, :priority, :due_date])
+        if todo.update_fields(data, [:description, :priority, :due_date, :done])
           respond_with({:status => 200, :message => 'Todo updated successfully', :todo => todo}, {:todo_url => "/api/v1/todos/#{todo.id}"})
         else
           respond_with({:status => 412, :message => 'Invalid Record', :errors => todo.errors})     
